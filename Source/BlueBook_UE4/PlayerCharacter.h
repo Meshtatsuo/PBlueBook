@@ -27,10 +27,10 @@ public:
 	int32 staminaDrainRate;
 	//booleans used to enable and disable abilities
 	bool canJump = false;
-
+	/*
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Any)
 		TArray<TSubclassOf<AInteractableObject>> inventory;
-
+		*/
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

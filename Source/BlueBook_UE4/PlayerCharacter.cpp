@@ -27,7 +27,7 @@ APlayerCharacter::APlayerCharacter()
 	playerMaxStamina = 100;
 	playerStamina = 50;
 	//Initialize Inventory
-	inventory.Empty;
+	//inventory.Empty;
 
 
 	//Building character. Creating camera component
@@ -95,10 +95,10 @@ void APlayerCharacter::LookYaw(float amount) {
 void APlayerCharacter::Use() {
 	if (CurrentObject) {
 
-		switch (CurrentObject->objectType) {
+		//switch (CurrentObject->objectType) {
 
 
-		}
+		//}
 
 	}
 
@@ -118,7 +118,7 @@ void APlayerCharacter::Sprint() {
 }
 
 void APlayerCharacter::StartCrouch() {
-	Crouch();
+	//Crouch();
 }
 
 //Checks environement for interactables
