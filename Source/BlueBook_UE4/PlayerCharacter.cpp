@@ -14,11 +14,12 @@ APlayerCharacter::APlayerCharacter()
 	objectInFocus = "";
 	//Default player state
 	canJump = true;
-
+	canRun = true;
+	flashlightOn = false;
 	//movementSpeeds
 	defaultMovementSpeed = 200;
 	injuredMovementSpeed = 150;
-	sprintMovementSpeed = 700;
+	sprintMovementSpeed = 500;
 	//sets movementSpeed to default
 	GetCharacterMovement()->MaxWalkSpeed = defaultMovementSpeed;
 	//Health and Stamina Check
@@ -26,6 +27,12 @@ APlayerCharacter::APlayerCharacter()
 	playerHealth = 75;
 	playerMaxStamina = 100;
 	playerStamina = 50;
+	staminaDrainRate = 2;
+	//Initialize Flashlight vars
+	maxBatteryLife = 1;
+	currentBatteryLife = maxBatteryLife;
+	batteryDrainTickRate = 3.5f;
+	batteryDrainRate = .05f;
 	//Initialize Inventory
 	//inventory.Empty;
 
@@ -37,6 +44,9 @@ APlayerCharacter::APlayerCharacter()
 	defaultPlayerMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, NAME_None);
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	playerFlashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Flashlight"));
+	playerFlashlight->SetupAttachment(defaultPlayerMesh);
+	playerFlashlight->SetIntensity(0);
 }
 
 // Called when the game starts or when spawned
@@ -44,7 +54,8 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	GetCharacterMovement()->MaxWalkSpeed = defaultMovementSpeed;
-
+	//Timer every "tickrate" that loops
+	GetWorldTimerManager().SetTimer(spawnTimer, this, &APlayerCharacter::UpdateBattery, batteryDrainTickRate, true);
 }
 
 // Called every frame
@@ -52,6 +63,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	CheckForInteractables();
+	//UpdateStamina();
 }
 
 // Called to bind functionality to input
@@ -64,8 +76,10 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	InputComponent->BindAxis("LookYaw", this, &APlayerCharacter::LookYaw);
 	InputComponent->BindAction("Use", IE_Pressed, this, &APlayerCharacter::Use);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::StartJump);
-	InputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::Sprint);
+	InputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::StartSprint);
+	InputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::EndSprint);
 	InputComponent->BindAction("StartCrouch", IE_Pressed, this, &APlayerCharacter::StartCrouch);
+	InputComponent->BindAction("Flashlight", IE_Pressed, this, &APlayerCharacter::ToggleFlashlight);
 }
 
 void APlayerCharacter::MoveForward(float amount) {
@@ -93,14 +107,6 @@ void APlayerCharacter::LookYaw(float amount) {
 }
 
 void APlayerCharacter::Use() {
-	if (CurrentObject) {
-
-		//switch (CurrentObject->objectType) {
-
-
-		//}
-
-	}
 
 }
 
@@ -113,12 +119,48 @@ void APlayerCharacter::StartJump() {
 		//UEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Can't Jump");
 	}
 }
-void APlayerCharacter::Sprint() {
+void APlayerCharacter::StartSprint() {
+	if (canRun) {
+		GetCharacterMovement()->MaxWalkSpeed = sprintMovementSpeed;
+		isRunning = true;
+	}
+	else if (!canRun) {
+		EndSprint();
+	}
+}
 
+void APlayerCharacter::EndSprint() {
+	GetCharacterMovement()->MaxWalkSpeed = defaultMovementSpeed;
+	isRunning = false;
 }
 
 void APlayerCharacter::StartCrouch() {
 	//Crouch();
+}
+
+void APlayerCharacter::ToggleFlashlight() {
+	if (flashlightOn) {
+		//playerFlashlight->SetIntensity(0);
+		flashlightOn = false;
+	}
+	else if (!flashlightOn && currentBatteryLife > 0) {
+		flashlightOn = true;
+		//playerFlashlight->SetIntensity(2);
+	}
+}
+
+void APlayerCharacter::UpdateBattery() {
+	if (flashlightOn) {
+		if (currentBatteryLife > 0) {
+			currentBatteryLife -= batteryDrainRate;
+		}
+	}
+
+	if (currentBatteryLife <= 0) {
+		currentBatteryLife = 0;
+		flashlightOn = false;
+	}
+
 }
 
 //Checks environement for interactables
@@ -148,5 +190,36 @@ void APlayerCharacter::CheckForInteractables() {
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, *CurrentObject->GetName());
 		objectInFocus = *CurrentObject->GetName();
 	}
+
+}
+
+
+//Updates player health
+
+void APlayerCharacter::UpdateHealth(bool isDamage, int amount) {
+	if (isDamage == true) {
+		playerHealth -= amount;
+		if (playerHealth <= 0) {
+			Die();
+			return;
+		}
+		else {
+			return;
+		}
+		return;
+	}
+
+	else if (isDamage == false) {
+		playerHealth += amount;
+		FMath::Clamp(playerHealth, 0.0f, playerMaxHealth);
+		return;
+	}
+}
+//Updates player stamina and player ability to run
+void APlayerCharacter::UpdateStamina() {
+
+}
+
+void APlayerCharacter::Die() {
 
 }

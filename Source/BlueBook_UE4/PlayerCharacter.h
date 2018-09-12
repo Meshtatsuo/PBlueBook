@@ -20,17 +20,27 @@ public:
 	float injuredMovementSpeed;
 	float sprintMovementSpeed;
 	//Player health and stamina check
-	int32 playerMaxHealth;
-	int32 playerHealth;
-	int32 playerMaxStamina;
-	int32 playerStamina;
-	int32 staminaDrainRate;
+	float playerMaxHealth;
+	float playerHealth;
+	float playerMaxStamina;
+	float playerStamina;
+	float staminaDrainRate;
+	bool isRunning;
+	bool canRun;
 	//booleans used to enable and disable abilities
 	bool canJump = false;
+	bool flashlightOn = false;
+	//Flashlight Vars
+	float maxBatteryLife;
+	float currentBatteryLife;
+	float batteryDrainRate;
+	float batteryDrainTickRate;
+	FTimerHandle spawnTimer;
 	/*
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Any)
 		TArray<TSubclassOf<AInteractableObject>> inventory;
-		*/
+	*/
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -50,10 +60,21 @@ public:
 	// Action Mapping Events
 	void Use();
 	void StartJump();
-	void Sprint();
+	void StartSprint();
+	void EndSprint();
 	void StartCrouch();
+	void ToggleFlashlight();
 	// Checking for interactable objects
 	void CheckForInteractables();
+	// Manage Player Stamina/Health/Battery
+	void UpdateBattery();
+	void UpdateStamina();
+	void UpdateHealth(bool isDamage, int dmgAmount);
+	void Die();
+
+
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
+		USpotLightComponent* playerFlashlight;
 
 private:
 
