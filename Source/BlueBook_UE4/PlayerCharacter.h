@@ -29,17 +29,26 @@ public:
 	bool canRun;
 	//booleans used to enable and disable abilities
 	bool canJump = false;
+	UPROPERTY(BlueprintReadOnly)
 	bool flashlightOn = false;
 	//Flashlight Vars
 	float maxBatteryLife;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float currentBatteryLife;
 	float batteryDrainRate;
 	float batteryDrainTickRate;
+	float newBatteryCharge;
 	FTimerHandle spawnTimer;
-	/*
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Any)
-		TArray<TSubclassOf<AInteractableObject>> inventory;
-	*/
+
+	//RADIO VARS
+	float scrubRate;
+	float currentFrequency;
+	bool radioIsOn;
+	
+	//Inventory Tracking
+	int batteryCount;
+	int clearanceLevel;
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -64,6 +73,13 @@ public:
 	void EndSprint();
 	void StartCrouch();
 	void ToggleFlashlight();
+	void LoadBatteries();
+	//Radio Control
+
+	void ScrubRadioFreqUp();
+	void ScrubRadioFreqDown();
+	void UseRadio();
+	void StopRadio();
 	// Checking for interactable objects
 	void CheckForInteractables();
 	// Manage Player Stamina/Health/Battery
@@ -73,9 +89,14 @@ public:
 	void Die();
 
 
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
-		USpotLightComponent* playerFlashlight;
+	//Stores item being looked at by the player//
+	AInteractableObject* currentObject;
+	AInteractableObject* lastCurrentObject;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	USpringArmComponent* springArm;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		USpotLightComponent* playerFlashlight;
 private:
 
 	UPROPERTY(VisibleAnywhere)
@@ -85,8 +106,7 @@ private:
 	UPROPERTY(VisibleAnywhere)
 		UStaticMeshComponent* defaultPlayerMesh;
 
-	//Stores item being looked at by the player//
-	AInteractableObject* CurrentObject;
+
 
 	//Distance for line trace + trace vectors
 	FVector StartTrace;

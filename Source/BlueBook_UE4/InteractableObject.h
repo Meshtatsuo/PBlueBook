@@ -20,12 +20,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* defaultMesh;
-		
-	enum objectType
-	{
-		door,
-		keycard,
-		battery,
-		note
-	};
+	UPROPERTY(EditDefaultsOnly)
+	int clearanceLevel;
+	UPROPERTY(EditDefaultsOnly)
+	FString objectType;
 };

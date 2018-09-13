@@ -31,9 +31,13 @@ APlayerCharacter::APlayerCharacter()
 	//Initialize Flashlight vars
 	maxBatteryLife = 1;
 	currentBatteryLife = maxBatteryLife;
-	batteryDrainTickRate = 3.5f;
-	batteryDrainRate = .05f;
-	//Initialize Inventory
+	batteryDrainTickRate = 1.25f;
+	batteryDrainRate = .025f;
+	newBatteryCharge = .25;
+	//Initialize Radio
+	radioIsOn = false;
+	currentFrequency = 89.4;
+	scrubRate = .1;
 	//inventory.Empty;
 
 
@@ -44,9 +48,14 @@ APlayerCharacter::APlayerCharacter()
 	defaultPlayerMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, NAME_None);
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	springArm->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	playerFlashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Flashlight"));
-	playerFlashlight->SetupAttachment(defaultPlayerMesh);
-	playerFlashlight->SetIntensity(0);
+	playerFlashlight->AttachToComponent(springArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	playerFlashlight->SetIntensity(5);
+
+
+
 }
 
 // Called when the game starts or when spawned
@@ -63,7 +72,6 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	CheckForInteractables();
-	//UpdateStamina();
 }
 
 // Called to bind functionality to input
@@ -80,6 +88,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	InputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::EndSprint);
 	InputComponent->BindAction("StartCrouch", IE_Pressed, this, &APlayerCharacter::StartCrouch);
 	InputComponent->BindAction("Flashlight", IE_Pressed, this, &APlayerCharacter::ToggleFlashlight);
+	InputComponent->BindAction("LoadBatteries", IE_Pressed, this, &APlayerCharacter::LoadBatteries);
+	InputComponent->BindAction("UseRadio", IE_Pressed, this, &APlayerCharacter::UseRadio);
+	InputComponent->BindAction("UseRadio", IE_Released, this, &APlayerCharacter::StopRadio);
+	InputComponent->BindAction("ScrubRadioFreqUp", IE_Pressed, this, &APlayerCharacter::ScrubRadioFreqUp);
+	InputComponent->BindAction("ScrubRadioFreqDown", IE_Pressed, this, &APlayerCharacter::ScrubRadioFreqDown);
 }
 
 void APlayerCharacter::MoveForward(float amount) {
@@ -107,7 +120,70 @@ void APlayerCharacter::LookYaw(float amount) {
 }
 
 void APlayerCharacter::Use() {
+	//Only react if there is an object in focus
+	if (currentObject) {
 
+		if (currentObject->objectType == "Battery") {
+			batteryCount += 1;
+			currentObject->Destroy();
+
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Battery picked up");
+		}
+		else if (currentObject->objectType == "ClearanceCard") {
+			if (currentObject->clearanceLevel > clearanceLevel) {
+				clearanceLevel = currentObject->clearanceLevel;
+				currentObject->Destroy();
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Upgraded security clearance!");
+			}
+		}
+
+		else if (currentObject->objectType == "ClearanceDoor") {
+			if (clearanceLevel >= currentObject->clearanceLevel) {
+				currentObject->Destroy();
+			}
+			else {
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "ERROR: SECURITY CLEARANCE DENIED");
+			}
+		}
+
+	}
+
+}
+
+//RADIO USAGE
+
+void APlayerCharacter::UseRadio() {
+	radioIsOn = true;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, "Radio On");
+}
+void APlayerCharacter::StopRadio() {
+	radioIsOn = false;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, "Radio Off");
+}
+
+void APlayerCharacter::ScrubRadioFreqUp() {
+	if (radioIsOn) {
+		currentFrequency += scrubRate;
+		FString toString = FString::SanitizeFloat(currentFrequency);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, toString);
+		if (currentFrequency > 102.1) {
+			currentFrequency = 89.6;
+		}
+	}
+	else {
+		//
+	}
+}
+
+void APlayerCharacter::ScrubRadioFreqDown() {
+	if (radioIsOn) {
+		currentFrequency -= scrubRate;
+		FString toString = FString::SanitizeFloat(currentFrequency);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, toString);
+		if (currentFrequency < 89.6) {
+			currentFrequency = 102.1;
+		}
+	}
 }
 
 void APlayerCharacter::StartJump() {
@@ -139,28 +215,70 @@ void APlayerCharacter::StartCrouch() {
 }
 
 void APlayerCharacter::ToggleFlashlight() {
+	
 	if (flashlightOn) {
-		//playerFlashlight->SetIntensity(0);
+		if (playerFlashlight) {
+			playerFlashlight->SetIntensity(0);
+		}
 		flashlightOn = false;
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Flashlight Off");
 	}
+
 	else if (!flashlightOn && currentBatteryLife > 0) {
 		flashlightOn = true;
-		//playerFlashlight->SetIntensity(2);
+		if (playerFlashlight) {
+			playerFlashlight->SetIntensity(50000);
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Success");
+		}
+
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Flashlight On");
+
 	}
+
+}
+
+void APlayerCharacter::LoadBatteries() {
+	if (batteryCount > 0) {
+		//If currentBatteryLife is less than 0 for some reason, set it back to 0.
+		if (currentBatteryLife < 0) {
+			currentBatteryLife = 0;
+		}
+		currentBatteryLife += newBatteryCharge;
+		//If currentBatteryLife exceeds maxBatteryLife, set it to maxBatteryLife
+		if (currentBatteryLife > maxBatteryLife) {
+			currentBatteryLife = maxBatteryLife;
+		}
+		batteryCount--;
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Batteries Added!");
+	}
+	//In the event that the battery life 
+	else if (batteryCount <= 0) {
+		//Do nothing if you don't have any batteries
+		batteryCount = 0;
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "No Batteries in Inventory");
+	}
+
 }
 
 void APlayerCharacter::UpdateBattery() {
 	if (flashlightOn) {
 		if (currentBatteryLife > 0) {
 			currentBatteryLife -= batteryDrainRate;
+			if (GEngine) {
+				FString toString = FString::SanitizeFloat(currentBatteryLife);
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, toString);
+			}
 		}
 	}
 
 	if (currentBatteryLife <= 0) {
 		currentBatteryLife = 0;
-		flashlightOn = false;
+		ToggleFlashlight();
 	}
-
 }
 
 //Checks environement for interactables
@@ -179,16 +297,21 @@ void APlayerCharacter::CheckForInteractables() {
 	AInteractableObject* PotentialObject = Cast<AInteractableObject>(LinetraceHit.GetActor());
 	//checks to see if there was a hit. If not, sets currentobject to nullptr.
 	if (PotentialObject == NULL) {
-		CurrentObject = nullptr;
+		if (currentObject) {
+		lastCurrentObject = currentObject; 
+		lastCurrentObject->defaultMesh->SetRenderCustomDepth(false);
+		}
+		currentObject = nullptr;
 		objectInFocus = "";
 		return;
 	}
 	//if hit successful, store object as currentobject, get object's name, print name to screen and store name in string objectInFocus.
 	else if (PotentialObject != NULL) {
-		CurrentObject = PotentialObject;
-		CurrentObject->GetName();
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, *CurrentObject->GetName());
-		objectInFocus = *CurrentObject->GetName();
+		currentObject = PotentialObject;
+		currentObject->GetName();
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, *currentObject->GetName());
+		objectInFocus = *currentObject->GetName();
+		currentObject->defaultMesh->SetRenderCustomDepth(true);
 	}
 
 }
