@@ -42,7 +42,9 @@ public:
 
 	//RADIO VARS
 	float scrubRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float currentFrequency;
+	UPROPERTY(VisibleAnywhere)
 	bool radioIsOn;
 	
 	//Inventory Tracking
@@ -72,6 +74,7 @@ public:
 	void StartSprint();
 	void EndSprint();
 	void StartCrouch();
+	void EndCrouch();
 	void ToggleFlashlight();
 	void LoadBatteries();
 	//Radio Control

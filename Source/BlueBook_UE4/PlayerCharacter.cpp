@@ -17,9 +17,9 @@ APlayerCharacter::APlayerCharacter()
 	canRun = true;
 	flashlightOn = false;
 	//movementSpeeds
-	defaultMovementSpeed = 200;
-	injuredMovementSpeed = 150;
-	sprintMovementSpeed = 500;
+	defaultMovementSpeed = 400;
+	injuredMovementSpeed = 300;
+	sprintMovementSpeed = 1000;
 	//sets movementSpeed to default
 	GetCharacterMovement()->MaxWalkSpeed = defaultMovementSpeed;
 	//Health and Stamina Check
@@ -82,6 +82,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	InputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
 	InputComponent->BindAxis("LookPitch", this, &APlayerCharacter::LookPitch);
 	InputComponent->BindAxis("LookYaw", this, &APlayerCharacter::LookYaw);
+	InputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::StartCrouch);
+	InputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::EndCrouch);
 	InputComponent->BindAction("Use", IE_Pressed, this, &APlayerCharacter::Use);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::StartJump);
 	InputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::StartSprint);
@@ -154,6 +156,7 @@ void APlayerCharacter::Use() {
 
 void APlayerCharacter::UseRadio() {
 	radioIsOn = true;
+	
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, "Radio On");
 }
 void APlayerCharacter::StopRadio() {
@@ -211,7 +214,10 @@ void APlayerCharacter::EndSprint() {
 }
 
 void APlayerCharacter::StartCrouch() {
-	//Crouch();
+	Crouch();
+}
+void APlayerCharacter::EndCrouch() {
+	UnCrouch();
 }
 
 void APlayerCharacter::ToggleFlashlight() {
