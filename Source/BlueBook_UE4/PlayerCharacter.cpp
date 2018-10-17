@@ -43,15 +43,20 @@ APlayerCharacter::APlayerCharacter()
 
 	//Building character. Creating camera component
 	defaultCollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("defaultCollisionComp"));
-	defaultCollisionComp->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	defaultCollisionComp->SetupAttachment(GetParentComponent());
+	//defaultCollisionComp->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	defaultPlayerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("defaultMesh"));
-	defaultPlayerMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, NAME_None);
+	defaultPlayerMesh->SetupAttachment(GetParentComponent());
+	//defaultPlayerMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, NAME_None);
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	FirstPersonCameraComponent->SetupAttachment(GetParentComponent());
+	//FirstPersonCameraComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	springArm->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	springArm->SetupAttachment(GetParentComponent());
+	//springArm->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	playerFlashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Flashlight"));
-	playerFlashlight->AttachToComponent(springArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	playerFlashlight->SetupAttachment(GetParentComponent());
+	//playerFlashlight->AttachToComponent(springArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	playerFlashlight->SetIntensity(5);
 
 
@@ -169,7 +174,7 @@ void APlayerCharacter::ScrubRadioFreqUp() {
 		currentFrequency += scrubRate;
 		FString toString = FString::SanitizeFloat(currentFrequency);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, toString);
-		if (currentFrequency > 102.1) {
+		if (currentFrequency > 105.6) {
 			currentFrequency = 89.6;
 		}
 	}
@@ -184,7 +189,7 @@ void APlayerCharacter::ScrubRadioFreqDown() {
 		FString toString = FString::SanitizeFloat(currentFrequency);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, toString);
 		if (currentFrequency < 89.6) {
-			currentFrequency = 102.1;
+			currentFrequency = 105.6;
 		}
 	}
 }
